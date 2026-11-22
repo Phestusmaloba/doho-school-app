@@ -1,44 +1,50 @@
 name: Build Doho School APK
 
 on:
-workflow_dispatch:
-push:
-branches: [ main ]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build:
-runs-on: ubuntu-latest
-steps:
-- name: Check out repository
-uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
 
-  - name: Set up Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-  - name: Set up Gradle
-    uses: gradle/actions/setup-gradle@v4
-    with:
-      gradle-version: '8.9'
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-  - name: Extract Android project
-    run: |
-      unzip -o Doho_School_Android_Project_with_Cloud_Build.zip -d .
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-  - name: Build APK
-    run: |
-      cd doho_android
-      gradle --no-daemon assembleDebug
+      - name: Extract Android project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name '*.zip' | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Android project ZIP file not found"
+            exit 1
+          fi
+          mkdir -p doho_android
+          unzip -o "$ZIP_FILE" -d doho_android
 
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: Doho-School-debug-APK
-      path: doho_android/app/build/outputs/apk/debug/app-debug.apk
-      if-no-files-found: error
-      retention-days: 14
+      - name: Build APK
+        run: |
+          cd doho_android
+          gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Doho-School-APK
+          path: doho_android/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
